@@ -60,6 +60,13 @@
 </head>
 <body>
     <div class="container">
+        <div class="search-box">
+            <form action="/phone" method="get">
+                <label for="phone-search">Search by Phone Number:</label>
+                <input type="text" id="phone-search" name="phone" placeholder="Format Number: 8316369400" required>
+                <input type="submit" value="Search">
+            </form>
+        </div>
         <img src="https://www.cns4u.com/logo/logo-medium.png" alt="Logo" class="logo">
         <h1>Client Details</h1>
         <p><strong>Company:</strong> {{ company.name }}</p>
