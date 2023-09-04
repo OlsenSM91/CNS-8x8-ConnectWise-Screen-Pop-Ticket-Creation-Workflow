@@ -4,32 +4,95 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Client Details</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            color: #3AA1D8;
+        }
+
+        p, label {
+            color: #6CB545;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #c32326;
+            border-radius: 5px;
+        }
+
+        input[type="submit"] {
+            background-color: #3AA1D8;
+            color: #fff;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #2a8bb5;
+        }
+
+        .logo {
+            display: block;
+            margin: 0 auto 20px auto;
+            max-width: 200px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Client Details</h1>
-    <p><strong>Company:</strong> {{ company.name }}</p>
-    <p><strong>Contact:</strong> {{ contacts[0].name if contacts else 'N/A' }}</p>
-    <p><strong>Phone:</strong> {{ contacts[0].phoneNumber if contacts else 'N/A' }}</p>
-    <p><strong>Email:</strong> {{ contacts[0].email if contacts else 'N/A' }}</p>
-    <p><strong>Site:</strong> Main</p>
-    <p><strong>Address 1:</strong> {{ company.addressLine1 }}</p>
-    <p><strong>Address 2:</strong> {{ company.addressLine2 }}</p>
-    <p><strong>City:</strong> {{ company.city }}</p>
-    <p><strong>State:</strong> {{ company.state }}</p>
-    <p><strong>Zip:</strong> {{ company.zip }}</p>
-    <p><strong>Country:</strong> {{ company.country }}</p>
+    <div class="container">
+        <img src="https://www.cns4u.com/logo/logo-medium.png" alt="Logo" class="logo">
+        <h1>Client Details</h1>
+        <p><strong>Company:</strong> {{ company.name }}</p>
+        <p><strong>Company Phone:</strong> {{ company.phoneNumber or '' }}</p>
+        
+        {% if contacts and contacts[0] %}
+            <p><strong>Contact:</strong> {{ contacts[0].name }}</p>
+            <p><strong>Contact Phone:</strong> {{ contacts[0].phoneNumber or '' }}</p>
+            <p><strong>Email:</strong> {{ contacts[0].email or '' }}</p>
+        {% else %}
+            <p><strong>Contact:</strong> No contact information available.</p>
+        {% endif %}
+        
+        <p><strong>Site:</strong> Main</p>
+        <p><strong>Address 1:</strong> {{ company.addressLine1 }}</p>
+        <p><strong>Address 2:</strong> {{ company.addressLine2 or '' }}</p>
+        <p><strong>City:</strong> {{ company.city }}</p>
+        <p><strong>State:</strong> {{ company.state }}</p>
+        <p><strong>Zip:</strong> {{ company.zip }}</p>
+        <p><strong>Country:</strong> {{ company.country.name if company.country else '' }}</p>    
 
-    <h2>Create a Ticket</h2>
-    <form action="/create-ticket" method="post">
-        <label for="title">Summary:</label>
-        <input type="text" id="title" name="title" required><br><br>
+        <h2>Create a Ticket</h2>
+        <form action="/create-ticket" method="post">
+            <label for="title">Summary:</label>
+            <input type="text" id="title" name="title" required><br><br>
 
-        <label for="description">Notes:</label>
-        <textarea id="description" name="description" rows="4" cols="50" required></textarea><br><br>
+            <label for="description">Description:</label>
+            <textarea id="description" name="description" rows="4" cols="50" required></textarea><br><br>
 
-        <input type="hidden" name="company_id" value="{{ company.id }}">
+            <input type="hidden" name="company_id" value="{{ company.id }}">
 
-        <input type="submit" value="Submit Ticket">
-    </form>
+            <input type="submit" value="Submit Ticket">
+        </form>
+    </div>
 </body>
 </html>
