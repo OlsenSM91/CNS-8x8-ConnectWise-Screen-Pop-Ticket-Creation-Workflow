@@ -31,6 +31,7 @@ def index():
 @app.route('/phone')
 def phone():
     phone_number = request.args.get('phone')
+    # Use the direct endpoint to search by phone number
     response = requests.get(f"{BASE_URL}/company/companies?conditions=phoneNumber%20like%20'{phone_number}'", headers=HEADERS)
     
     if response.status_code == 200:
@@ -46,6 +47,7 @@ def phone():
         except requests.exceptions.JSONDecodeError:
             return f"Error decoding JSON: {response.text}", 500
     else:
+        # Return the detailed error message from the API
         return f"API returned status code {response.status_code}: {response.json().get('message', response.text)}", 500
 
 @app.route('/create-ticket', methods=['POST'])
