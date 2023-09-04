@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Details</title>
+</head>
+<body>
+    <h1>Client Details</h1>
+    <p><strong>Company:</strong> {{ company.name }}</p>
+    <p><strong>Contact:</strong> {{ contacts[0].name if contacts else 'N/A' }}</p>
+    <p><strong>Phone:</strong> {{ contacts[0].phoneNumber if contacts else 'N/A' }}</p>
+    <p><strong>Email:</strong> {{ contacts[0].email if contacts else 'N/A' }}</p>
+    <p><strong>Site:</strong> Main</p>
+    <p><strong>Address 1:</strong> {{ company.addressLine1 }}</p>
+    <p><strong>Address 2:</strong> {{ company.addressLine2 }}</p>
+    <p><strong>City:</strong> {{ company.city }}</p>
+    <p><strong>State:</strong> {{ company.state }}</p>
+    <p><strong>Zip:</strong> {{ company.zip }}</p>
+    <p><strong>Country:</strong> {{ company.country }}</p>
+
+    <h2>Create a Ticket</h2>
+    <form action="/create-ticket" method="post">
+        <label for="title">Summary:</label>
+        <input type="text" id="title" name="title" required><br><br>
+
+        <label for="description">Notes:</label>
+        <textarea id="description" name="description" rows="4" cols="50" required></textarea><br><br>
+
+        <input type="hidden" name="company_id" value="{{ company.id }}">
+
+        <input type="submit" value="Submit Ticket">
+    </form>
+</body>
+</html>
