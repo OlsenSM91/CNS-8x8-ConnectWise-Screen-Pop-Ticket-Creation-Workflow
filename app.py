@@ -31,42 +31,46 @@ def index():
 @app.route('/phone')
 def phone():
     phone_number = request.args.get('phone')
-    # Use the direct endpoint to search by phone number
     response = requests.get(f"{BASE_URL}/company/companies?conditions=phoneNumber%20like%20'{phone_number}'", headers=HEADERS)
     
     if response.status_code == 200:
         try:
             companies = response.json()
             if companies:
-                return render_template('company.html', company=companies[0])
+                company_id = companies[0]['id']
+                contacts_response = requests.get(f"{BASE_URL}/company/companies/{company_id}/contacts", headers=HEADERS)
+                contacts = contacts_response.json() if contacts_response.status_code == 200 else []
+                return render_template('company.html', company=companies[0], contacts=contacts)
             else:
                 return "No company found with the provided phone number.", 404
         except requests.exceptions.JSONDecodeError:
             return f"Error decoding JSON: {response.text}", 500
     else:
-        # Return the detailed error message from the API
         return f"API returned status code {response.status_code}: {response.json().get('message', response.text)}", 500
-
 
 @app.route('/create-ticket', methods=['POST'])
 def create_ticket():
-    """Endpoint to create a ticket in ConnectWise."""
     title = request.form.get('title')
     description = request.form.get('description')
+    company_id = request.form.get('company_id')
     
-    # Construct the data payload for the API request
     data = {
-        "summary": title,
-        "initialDescription": description
-        # Add other necessary fields as required by the ConnectWise API
+        "company": {"id": company_id},
+        "summary": title,  # Using "Summary" for the ticket title
+        "initialDescription": description,  # Using "Initial Description" for the ticket description
+        "board": {"name": "RX Automate"},
+        "status": {"name": "New (portal)"}
     }
-    
+
     response = requests.post(f"{BASE_URL}/service/tickets", headers=HEADERS, json=data)
     
     if response.status_code == 201:
         return "Ticket created successfully!"
     else:
-        return f"Failed to create ticket. Error: {response.text}", 400
+        error_message = response.json().get('message', response.text)
+        error_details = response.json().get('errors', [])
+        detailed_error = '; '.join([error.get('message', '') for error in error_details])
+        return f"Failed to create ticket. Error: {error_message}. Details: {detailed_error}", 400
 
 if __name__ == '__main__':
     app.run(debug=True)
