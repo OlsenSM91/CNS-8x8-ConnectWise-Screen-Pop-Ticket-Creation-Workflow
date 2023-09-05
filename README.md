@@ -1,6 +1,6 @@
 # ConnectWise 8x8 Screen Pop Integration Application
 
-![screenpop](https://github.com/OlsenSM91/CW8x8ScreenPop/assets/130707762/6c489673-1c0b-46b5-9dd9-fd6fa52c4595)
+![screenpop](https://github.com/OlsenSM91/CNS-8x8-ConnectWise-Screen-Pop-Ticket-Creation-Workflow/assets/130707762/741808b6-edde-4d67-abe9-b9495b787a50)
 
 This integration Screen Pop is designed to seamlessly connect with the ConnectWise API using the 8x8 Caller ID screen pop setting, allowing users to search for client details using a phone number and create tickets directly from the interface.
 
