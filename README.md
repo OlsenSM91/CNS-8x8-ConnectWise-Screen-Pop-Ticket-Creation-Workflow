@@ -6,7 +6,7 @@ This integration Screen Pop is designed to seamlessly connect with the ConnectWi
 
 ## Features
 
-- **Screen Pop**: Use a URL such as `http://localhost:6969/phone?phone=%%PhoneNUmber%%` with Screen Pop Caller ID from 8x8 Work applications
+- **Screen Pop**: Use a URL such as `http://localhost:6969/phone?phone=%%CallerNumber%%` with Screen Pop Caller ID from 8x8 Work applications. ensure you set the 8x8 number to be the national number with no 1 before the area code so its like `5555555555`
 - **Client Search**: Quickly search for client details using a phone number.
 - **Detailed Client Information**: View essential client details such as company name, contact information, address, and more.
 - **Ticket Creation**: Easily create tickets with a summary and description for the searched client.
