@@ -72,13 +72,19 @@
         <p><strong>Company:</strong> {{ company.name }}</p>
         <p><strong>Company Phone:</strong> {{ company.phoneNumber or '' }}</p>
         
-        {% if contacts and contacts[0] %}
-            <p><strong>Contact:</strong> {{ contacts[0].name }}</p>
-            <p><strong>Contact Phone:</strong> {{ contacts[0].phoneNumber or '' }}</p>
-            <p><strong>Email:</strong> {{ contacts[0].email or '' }}</p>
-        {% else %}
-            <p><strong>Contact:</strong> No contact information available.</p>
-        {% endif %}
+        <div style="display: none;" id="contact-data">
+			{% if matched_contact %}
+				{% if matched_contact.communicationItems %}
+					{% for comm in matched_contact.communicationItems %}
+						<span class="{{ comm.communicationType }}" data-value="{{ comm.value }}"></span>
+					{% endfor %}
+				{% endif %}
+			{% endif %}
+		</div>
+
+		<p><strong>Contact:</strong> {{ matched_contact.firstName if matched_contact else 'N/A' }} {{ matched_contact.lastName if matched_contact else '' }}</p>
+		<p><strong>Contact Phone:</strong> <span id="contact-phone">N/A</span></p>
+		<p><strong>Email:</strong> <span id="contact-email">N/A</span></p>
         
         <p><strong>Site:</strong> Main</p>
         <p><strong>Address 1:</strong> {{ company.addressLine1 }}</p>
@@ -101,5 +107,24 @@
             <input type="submit" value="Submit Ticket">
         </form>
     </div>
+	
+	<script>
+		document.addEventListener("DOMContentLoaded", function() {
+			const contactData = document.getElementById('contact-data');
+        
+			const phoneElement = contactData.querySelector('.Phone');
+			const emailElement = contactData.querySelector('.Email');
+
+			if (phoneElement) {
+				document.getElementById('contact-phone').textContent = phoneElement.getAttribute('data-value'	);
+			}
+
+			if (emailElement) {
+				document.getElementById('contact-email').textContent = emailElement.getAttribute('data-value'	);
+			}
+		});
+	</script>
+
+	
 </body>
 </html>
