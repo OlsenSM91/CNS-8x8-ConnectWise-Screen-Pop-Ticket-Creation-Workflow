@@ -3,6 +3,7 @@ import requests
 import base64
 from decouple import config
 import logging
+from datetime import datetime
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -55,42 +56,65 @@ def index():
 @app.route('/phone')
 def phone():
     phone_number = request.args.get('phone')
-    phone_number = ''.join(filter(str.isdigit, phone_number))
-    contacts = []
-    page_number = 1
-    matched_contact = None
+    company_name = request.args.get('companyName')
 
-    # Step 1: Search by Individual's Phone Number
-    while True:
-        contacts_response = requests.get(f"{BASE_URL}/company/contacts?pageSize=1000&page={page_number}", headers=HEADERS)
-        if contacts_response.status_code != 200:
-            logging.error(f"Error fetching contacts for page {page_number}. Status code: {contacts_response.status_code}")
-            break
+    if company_name:
+        # Search by Company Name
+        company_search_response = requests.get(f"{BASE_URL}/company/companies?conditions=name like '%{company_name}%'", headers=HEADERS)
         
-        contacts = contacts_response.json()
-        if not contacts:
-            break
+        if company_search_response.status_code == 200 and company_search_response.json():
+            matched_company = company_search_response.json()[0]  # Take the first matched company
+            company_contacts = fetch_all_contacts_for_company(matched_company['id'])
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            return render_template('company.html', company=matched_company, contacts=company_contacts, matched_contact=None, timestamp=timestamp)
+        
+        else:
+            return "No company found with the provided name.", 404
 
-        matched_contact = next((contact for contact in contacts if contact.get('defaultPhoneNbr') == phone_number), None)
-        if matched_contact:
-            matched_company_id = matched_contact['company']['id']
-            company_response = requests.get(f"{BASE_URL}/company/companies/{matched_company_id}", headers=HEADERS)
-            if company_response.status_code == 200:
-                matched_company = company_response.json()
-                company_contacts = [contact for contact in contacts if 'company' in contact and contact['company'].get('id') == matched_company['id']]
-                return render_template('company.html', company=matched_company, contacts=company_contacts, matched_contact=matched_contact)
+    elif phone_number:
+        # Normalize phone number
+        phone_number = ''.join(filter(str.isdigit, phone_number))
+        contacts = []
+        page_number = 1
+        matched_contact = None
 
-        page_number += 1
+        # Step 1: Search by Individual's Phone Number
+        while True:
+            contacts_response = requests.get(f"{BASE_URL}/company/contacts?pageSize=1000&page={page_number}", headers=HEADERS)
+            
+            if contacts_response.status_code != 200:
+                logging.error(f"Error fetching contacts for page {page_number}. Status code: {contacts_response.status_code}")
+                break
+            
+            contacts = contacts_response.json()
+            if not contacts:
+                break
 
-    # Step 2: Search by Company's Primary Phone Number
-    company_search_response = requests.get(f"{BASE_URL}/company/companies?conditions=phoneNumber='{phone_number}'", headers=HEADERS)
-    
-    if company_search_response.status_code == 200 and company_search_response.json():
-        matched_company = company_search_response.json()[0]  # Take the first matched company
-        company_contacts = fetch_all_contacts_for_company(matched_company['id'])
-        return render_template('company.html', company=matched_company, contacts=company_contacts, matched_contact=None)
+            matched_contact = next((contact for contact in contacts if contact.get('defaultPhoneNbr') == phone_number), None)
+            if matched_contact:
+                matched_company_id = matched_contact['company']['id']
+                company_response = requests.get(f"{BASE_URL}/company/companies/{matched_company_id}", headers=HEADERS)
+                if company_response.status_code == 200:
+                    matched_company = company_response.json()
+                    company_contacts = [contact for contact in contacts if 'company' in contact and contact['company'].get('id') == matched_company['id']]
+                    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    return render_template('company.html', company=matched_company, contacts=company_contacts, matched_contact=matched_contact, timestamp=timestamp)
 
-    return "No individual or company found with the provided phone number.", 404
+            page_number += 1
+
+        # Step 2: Search by Company's Primary Phone Number
+        company_search_response = requests.get(f"{BASE_URL}/company/companies?conditions=phoneNumber='{phone_number}'", headers=HEADERS)
+        
+        if company_search_response.status_code == 200 and company_search_response.json():
+            matched_company = company_search_response.json()[0]  # Take the first matched company
+            company_contacts = fetch_all_contacts_for_company(matched_company['id'])
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            return render_template('company.html', company=matched_company, contacts=company_contacts, matched_contact=None, timestamp=timestamp)
+
+        return "No individual or company found with the provided phone number.", 404
+
+    else:
+        return "Please provide a phone number or company name.", 400
 
 @app.route('/create-ticket', methods=['POST'])
 def create_ticket():
@@ -98,12 +122,17 @@ def create_ticket():
     description = request.form.get('description')
     company_id = request.form.get('company_id')
     
+    # Get Board and Status from form data
+    board_name = request.form.get('board')
+    status_name = request.form.get('status')
+
+    # Construct the ticket payload
     data = {
         "company": {"id": company_id},
         "summary": title,  # Using "Summary" for the ticket title
         "initialDescription": description,  # Using "Initial Description" for the ticket description
-        "board": {"name": "RX Automate"},
-        "status": {"name": "New (portal)"}
+        "board": {"name": board_name},
+        "status": {"name": status_name}
     }
 
     response = requests.post(f"{BASE_URL}/service/tickets", headers=HEADERS, json=data)
