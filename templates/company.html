@@ -60,31 +60,38 @@
 </head>
 <body>
     <div class="container">
+        <!-- Search Box -->
         <div class="search-box">
             <form action="/phone" method="get">
                 <label for="phone-search">Search by Phone Number:</label>
-                <input type="text" id="phone-search" name="phone" placeholder="Format Number: 8316369400" required>
+                <input type="text" id="phone-search" name="phone" placeholder="Format Number: 8316369400">
+                <br><br>
+                <label for="company-search">Search by Company Name:</label>
+                <input type="text" id="company-search" name="companyName">
                 <input type="submit" value="Search">
             </form>
         </div>
+        <!-- Company Logo -->
         <img src="https://www.cns4u.com/logo/logo-medium.png" alt="Logo" class="logo">
+
+        <!-- Client Details -->
         <h1>Client Details</h1>
         <p><strong>Company:</strong> {{ company.name }}</p>
         <p><strong>Company Phone:</strong> {{ company.phoneNumber or '' }}</p>
         
         <div style="display: none;" id="contact-data">
-			{% if matched_contact %}
-				{% if matched_contact.communicationItems %}
-					{% for comm in matched_contact.communicationItems %}
-						<span class="{{ comm.communicationType }}" data-value="{{ comm.value }}"></span>
-					{% endfor %}
-				{% endif %}
-			{% endif %}
-		</div>
+            {% if matched_contact %}
+                {% if matched_contact.communicationItems %}
+                    {% for comm in matched_contact.communicationItems %}
+                        <span class="{{ comm.communicationType }}" data-value="{{ comm.value }}"></span>
+                    {% endfor %}
+                {% endif %}
+            {% endif %}
+        </div>
 
-		<p><strong>Contact:</strong> {{ matched_contact.firstName if matched_contact else 'N/A' }} {{ matched_contact.lastName if matched_contact else '' }}</p>
-		<p><strong>Contact Phone:</strong> <span id="contact-phone">N/A</span></p>
-		<p><strong>Email:</strong> <span id="contact-email">N/A</span></p>
+        <p><strong>Contact:</strong> {{ matched_contact.firstName if matched_contact else 'N/A' }} {{ matched_contact.lastName if matched_contact else '' }}</p>
+        <p><strong>Contact Phone:</strong> <span id="contact-phone">N/A</span></p>
+        <p><strong>Email:</strong> <span id="contact-email">N/A</span></p>
         
         <p><strong>Site:</strong> Main</p>
         <p><strong>Address 1:</strong> {{ company.addressLine1 }}</p>
@@ -94,6 +101,7 @@
         <p><strong>Zip:</strong> {{ company.zip }}</p>
         <p><strong>Country:</strong> {{ company.country.name if company.country else '' }}</p>    
 
+        <!-- Ticket Creation Form -->
         <h2>Create a Ticket</h2>
         <form action="/create-ticket" method="post">
             <label for="title">Summary:</label>
@@ -102,29 +110,46 @@
             <label for="description">Description:</label>
             <textarea id="description" name="description" rows="4" cols="50" required></textarea><br><br>
 
-            <input type="hidden" name="company_id" value="{{ company.id }}">
+            <!-- Board Dropdown -->
+            <label for="board">Board:</label>
+            <select name="board" id="board">
+                <option value="Professional Services">Professional Services</option>
+                <option value="RX Professional Services">RX Professional Services</option>
+            </select>
+            <br><br>
 
+            <!-- Status Dropdown -->
+            <label for="status">Status:</label>
+            <select name="status" id="status">
+                <option value="New (portal)">New (portal)</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Scheduled">Scheduled</option>
+            </select>
+            <br><br>
+
+            <input type="hidden" name="company_id" value="{{ company.id }}">
             <input type="submit" value="Submit Ticket">
         </form>
+
+        <!-- Timestamp -->
+        <p>Page rendered at: {{ timestamp }}</p>
     </div>
-	
-	<script>
-		document.addEventListener("DOMContentLoaded", function() {
-			const contactData = document.getElementById('contact-data');
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const contactData = document.getElementById('contact-data');
         
-			const phoneElement = contactData.querySelector('.Phone');
-			const emailElement = contactData.querySelector('.Email');
+            const phoneElement = contactData.querySelector('.Phone');
+            const emailElement = contactData.querySelector('.Email');
 
-			if (phoneElement) {
-				document.getElementById('contact-phone').textContent = phoneElement.getAttribute('data-value'	);
-			}
+            if (phoneElement) {
+                document.getElementById('contact-phone').textContent = phoneElement.getAttribute('data-value');
+            }
 
-			if (emailElement) {
-				document.getElementById('contact-email').textContent = emailElement.getAttribute('data-value'	);
-			}
-		});
-	</script>
-
-	
+            if (emailElement) {
+                document.getElementById('contact-email').textContent = emailElement.getAttribute('data-value');
+            }
+        });
+    </script>
 </body>
 </html>
