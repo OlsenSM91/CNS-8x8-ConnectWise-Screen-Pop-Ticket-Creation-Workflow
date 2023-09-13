@@ -2,6 +2,9 @@ from flask import Flask, request, render_template
 import requests
 import base64
 from decouple import config
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 
@@ -23,6 +26,27 @@ HEADERS = {
     'clientId': CLIENT_ID
 }
 
+def fetch_all_contacts_for_company(company_id):
+    """Fetch all contacts associated with a given company ID."""
+    contacts = []
+    page_number = 1
+
+    while True:
+        response = requests.get(f"{BASE_URL}/company/companies/{company_id}/contacts?pageSize=1000&page={page_number}", headers=HEADERS)
+        
+        if response.status_code != 200:
+            logging.error(f"Error fetching contacts for company ID {company_id} on page {page_number}. Status code: {response.status_code}")
+            break
+
+        company_contacts = response.json()
+        if not company_contacts:
+            break
+
+        contacts.extend(company_contacts)
+        page_number += 1
+
+    return contacts
+
 @app.route('/')
 def index():
     """Root endpoint that welcomes the user."""
@@ -31,24 +55,42 @@ def index():
 @app.route('/phone')
 def phone():
     phone_number = request.args.get('phone')
-    # Use the direct endpoint to search by phone number
-    response = requests.get(f"{BASE_URL}/company/companies?conditions=phoneNumber%20like%20'{phone_number}'", headers=HEADERS)
+    phone_number = ''.join(filter(str.isdigit, phone_number))
+    contacts = []
+    page_number = 1
+    matched_contact = None
+
+    # Step 1: Search by Individual's Phone Number
+    while True:
+        contacts_response = requests.get(f"{BASE_URL}/company/contacts?pageSize=1000&page={page_number}", headers=HEADERS)
+        if contacts_response.status_code != 200:
+            logging.error(f"Error fetching contacts for page {page_number}. Status code: {contacts_response.status_code}")
+            break
+        
+        contacts = contacts_response.json()
+        if not contacts:
+            break
+
+        matched_contact = next((contact for contact in contacts if contact.get('defaultPhoneNbr') == phone_number), None)
+        if matched_contact:
+            matched_company_id = matched_contact['company']['id']
+            company_response = requests.get(f"{BASE_URL}/company/companies/{matched_company_id}", headers=HEADERS)
+            if company_response.status_code == 200:
+                matched_company = company_response.json()
+                company_contacts = [contact for contact in contacts if 'company' in contact and contact['company'].get('id') == matched_company['id']]
+                return render_template('company.html', company=matched_company, contacts=company_contacts, matched_contact=matched_contact)
+
+        page_number += 1
+
+    # Step 2: Search by Company's Primary Phone Number
+    company_search_response = requests.get(f"{BASE_URL}/company/companies?conditions=phoneNumber='{phone_number}'", headers=HEADERS)
     
-    if response.status_code == 200:
-        try:
-            companies = response.json()
-            if companies:
-                company_id = companies[0]['id']
-                contacts_response = requests.get(f"{BASE_URL}/company/companies/{company_id}/contacts", headers=HEADERS)
-                contacts = contacts_response.json() if contacts_response.status_code == 200 else []
-                return render_template('company.html', company=companies[0], contacts=contacts)
-            else:
-                return "No company found with the provided phone number.", 404
-        except requests.exceptions.JSONDecodeError:
-            return f"Error decoding JSON: {response.text}", 500
-    else:
-        # Return the detailed error message from the API
-        return f"API returned status code {response.status_code}: {response.json().get('message', response.text)}", 500
+    if company_search_response.status_code == 200 and company_search_response.json():
+        matched_company = company_search_response.json()[0]  # Take the first matched company
+        company_contacts = fetch_all_contacts_for_company(matched_company['id'])
+        return render_template('company.html', company=matched_company, contacts=company_contacts, matched_contact=None)
+
+    return "No individual or company found with the provided phone number.", 404
 
 @app.route('/create-ticket', methods=['POST'])
 def create_ticket():
