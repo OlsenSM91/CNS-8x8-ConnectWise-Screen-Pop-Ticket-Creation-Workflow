@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Contact</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            color: #3AA1D8;
+        }
+
+        p, label {
+            color: #6CB545;
+        }
+
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #c32326;
+            border-radius: 5px;
+        }
+
+        input[type="submit"] {
+            background-color: #3AA1D8;
+            color: #fff;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #2a8bb5;
+        }
+
+        .logo {
+            display: block;
+            margin: 0 auto 20px auto;
+            max-width: 200px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <img src="{{ logo_url }}" alt="Company Logo" class="logo">
+
+        <!-- Add to Existing Company -->
+        <h2>Add to Existing Company</h2>
+        <input type="text" id="company-search" placeholder="Type to search for a company...">
+        <div id="company-search-results"></div>
+        
+        <!-- Form fields for adding a contact to an existing company -->
+        <form action="/add-contact-to-existing" method="post">
+            <h3>Contact Details</h3>
+            <label for="first-name">First Name:</label>
+            <input type="text" id="first-name" name="firstName" required>
+
+            <label for="last-name">Last Name:</label>
+            <input type="text" id="last-name" name="lastName" required>
+
+            <label for="phone">Phone Number:</label>
+            <input type="text" id="phone" name="phone" required>
+
+            <label for="email">Email:</label>
+            <input type="text" id="email" name="email" required>
+
+            <input type="hidden" id="company-id" name="companyId" required>
+            
+            <input type="submit" value="Add Contact to Existing Company">
+        </form>
+
+        <!-- Create New Company & Add Contact -->
+        <h2>Create New Company & Add Contact</h2>
+        <form action="/create-company-and-contact" method="post">
+            <label for="new-company-name">Company Name:</label>
+            <input type="text" id="new-company-name" name="companyName" required>
+            
+            <label for="site">Site:</label>
+            <input type="text" id="site" name="site" value="Main Office" required>
+            
+            <label for="address">Address:</label>
+            <input type="text" id="address" name="address" required>
+            
+            <label for="company-phone">Company Phone Number:</label>
+            <input type="text" id="company-phone" name="companyPhone" required>
+            
+            <label for="company-id">Company ID:</label>
+            <input type="text" id="company-id" name="companyId" required>
+            
+            <!-- Primary Contact Details -->
+            <h3>Primary Contact</h3>
+            <label for="first-name">First Name:</label>
+            <input type="text" id="first-name" name="firstName" required>
+            
+            <label for="last-name">Last Name:</label>
+            <input type="text" id="last-name" name="lastName" required>
+            
+            <label for="phone">Phone Number:</label>
+            <input type="text" id="phone" name="phone" required>
+            
+            <label for="email">Email:</label>
+            <input type="text" id="email" name="email" required>
+            
+            <input type="submit" value="Create Company & Add Contact">
+        </form>
+    </div>
+    <script>
+        const companySearchInput = document.getElementById('company-search');
+        const companySearchResults = document.getElementById('company-search-results');
+
+        companySearchInput.addEventListener('input', async function() {
+            const query = companySearchInput.value;
+            if (query.length < 3) {
+                companySearchResults.innerHTML = '';
+                return;
+            }
+
+            const response = await fetch(`/search-companies?query=${query}`);
+            const companies = await response.json();
+
+            let resultsHTML = '';
+            for (let company of companies) {
+                resultsHTML += `<div data-company-id="${company.id}">${company.name}</div>`;
+            }
+            companySearchResults.innerHTML = resultsHTML;
+        });
+
+        companySearchResults.addEventListener('click', function(event) {
+            const selectedCompany = event.target;
+            const companyId = selectedCompany.getAttribute('data-company-id');
+
+            if (companyId) {
+                document.getElementById('company-id').value = companyId;
+                companySearchResults.innerHTML = '';
+            }
+        });
+    </script>
+</body>
+
+</html>
