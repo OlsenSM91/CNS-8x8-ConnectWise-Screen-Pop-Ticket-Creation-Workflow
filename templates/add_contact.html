@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="shortcut icon" href="https://cns4u.com/logo/labtech.ico"/>
     <title>Add Contact</title>
     <style>
         body {
@@ -62,7 +63,8 @@
 
 <body>
     <div class="container">
-        <img src="{{ logo_url }}" alt="Company Logo" class="logo">
+        <!-- Company Logo -->
+        <img src="https://www.cns4u.com/logo/logo-medium.png" alt="Logo" class="logo">
 
         <!-- Add to Existing Company -->
         <h2>Add to Existing Company</h2>
@@ -94,18 +96,31 @@
         <form action="/create-company-and-contact" method="post">
             <label for="new-company-name">Company Name:</label>
             <input type="text" id="new-company-name" name="companyName" required>
-            
-            <label for="site">Site:</label>
-            <input type="text" id="site" name="site" value="Main Office" required>
-            
-            <label for="address">Address:</label>
-            <input type="text" id="address" name="address" required>
+                        
+            <!-- For Company Address -->
+			<label for="address">Address:</label>
+			<input type="text" id="address" name="address" required>
+
+			<!-- For City -->
+			<label for="city">City:</label>
+			<input type="text" id="city" name="city" required>
+
+			<!-- For State -->
+			<label for="state">State:</label>
+			<input type="text" id="state" name="state" required>
+
+			<!-- For Zip Code -->
+			<label for="zip">Zip Code:</label>
+			<input type="text" id="zip" name="zip" required>
             
             <label for="company-phone">Company Phone Number:</label>
             <input type="text" id="company-phone" name="companyPhone" required>
             
-            <label for="company-id">Company ID:</label>
-            <input type="text" id="company-id" name="companyId" required>
+            <label for="territory">Territory:</label>
+			<select id="territory" name="territory" required>
+				<option value="RX-TEK">RX-TEK</option>
+				<option value="Computer Networking Solutions">Computer Networking Solutions</option>
+			</select>
             
             <!-- Primary Contact Details -->
             <h3>Primary Contact</h3>
