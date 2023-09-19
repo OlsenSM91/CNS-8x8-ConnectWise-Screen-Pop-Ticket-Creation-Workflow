@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="shortcut icon" href="https://cns4u.com/logo/labtech.ico"/>
     <title>Client Details</title>
     <style>
         body {
@@ -64,10 +65,10 @@
         <div class="search-box">
             <form action="/phone" method="get">
                 <label for="phone-search">Search by Phone Number:</label>
-                <input type="text" id="phone-search" name="phone" placeholder="Format Number: 8316369400">
+                <input type="text" id="phone-search" name="phone" placeholder="Format: 8316369400">
                 <br><br>
                 <label for="company-search">Search by Company Name:</label>
-                <input type="text" id="company-search" name="companyName">
+                <input type="text" id="company-search" name="companyName" placeholder="Enter Company Name">
                 <input type="submit" value="Search">
             </form>
         </div>
@@ -105,10 +106,10 @@
         <h2>Create a Ticket</h2>
         <form action="/create-ticket" method="post">
             <label for="title">Summary:</label>
-            <input type="text" id="title" name="title" required><br><br>
+            <input type="text" id="title" name="title" placeholder="ie: [REMOTE] Jane unable to access outlook" required><br><br>
 
             <label for="description">Description:</label>
-            <textarea id="description" name="description" rows="4" cols="50" required></textarea><br><br>
+            <textarea id="description" name="description" placeholder="Please ensure to include who called in, what computer or system is having an issue, a breif description of the issue and also any known passwords for the afflicted system" rows="4" cols="50" required></textarea><br><br>
 
             <!-- Board Dropdown -->
             <label for="board">Board:</label>
@@ -132,7 +133,7 @@
         </form>
 
         <!-- Timestamp -->
-        <p>Page rendered at: {{ timestamp }}</p>
+        <p>Call came in at: {{ timestamp }}</p>
     </div>
     
     <script>
