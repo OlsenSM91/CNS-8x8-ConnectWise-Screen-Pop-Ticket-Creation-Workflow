@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, redirect, jsonify
 import requests
 import base64
 from decouple import config
@@ -47,6 +47,22 @@ def fetch_all_contacts_for_company(company_id):
         page_number += 1
 
     return contacts
+    
+def generate_company_identifier(company_name, max_length=30):
+    # Remove non-alphanumeric characters and replace spaces with a single space
+    identifier = ''.join(e for e in company_name if e.isalnum() or e == ' ')
+    identifier = ' '.join(identifier.split())
+
+    # Trim to the maximum length
+    identifier = identifier[:max_length]
+
+    # Ensure the last character isn't a space
+    return identifier.rstrip()
+    
+def create_identifier_from_company_name(company_name):
+    identifier = company_name[:23]  # get the first 23 characters
+    identifier = ''.join(e for e in identifier if e.isalnum())  # strip out non-alphanumeric characters
+    return identifier
 
 @app.route('/')
 def index():
@@ -111,10 +127,14 @@ def phone():
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             return render_template('company.html', company=matched_company, contacts=company_contacts, matched_contact=None, timestamp=timestamp)
 
-        return "No individual or company found with the provided phone number.", 404
+        return redirect('/add-contact')
 
     else:
         return "Please provide a phone number or company name.", 400
+        
+@app.route('/add-contact')
+def add_contact():
+    return render_template('add_contact.html')
 
 @app.route('/create-ticket', methods=['POST'])
 def create_ticket():
@@ -145,5 +165,169 @@ def create_ticket():
         detailed_error = '; '.join([error.get('message', '') for error in error_details])
         return f"Failed to create ticket. Error: {error_message}. Details: {detailed_error}", 400
 
+@app.route('/search-companies')
+def search_companies():
+    """Search for companies based on a query."""
+    query = request.args.get('query')
+    if not query:
+        return jsonify([])
+
+    # Search companies based on the query
+    company_search_response = requests.get(f"{BASE_URL}/company/companies?conditions=name like '%{query}%'", headers=HEADERS)
+    
+    if company_search_response.status_code == 200:
+        return jsonify(company_search_response.json())
+    else:
+        return jsonify([])
+
+@app.route('/add-contact-to-existing', methods=['POST'])
+def add_contact_to_existing():
+    """Add a contact to an existing company."""
+    # Extract form data
+    company_id = request.form.get('companyId')
+    first_name = request.form.get('firstName')
+    last_name = request.form.get('lastName')
+    email = request.form.get('email')
+    phone = request.form.get('phone')
+
+    # Prepare data for API request
+    contact_data = {
+            "firstName": first_name,
+            "lastName": last_name,
+            "company": {"id": company_id},
+            "defaultPhoneType": "Mobile",
+            "defaultPhoneNbr": phone,
+            "communicationItems": [
+                {
+                    "type": {"id": 1, "name": "Email"},
+                    "value": email,
+                    "defaultFlag": False,  # Ensure defaultFlag is set to False for email
+                    "communicationType": "Email"
+                },
+                {
+                    "type": {"id": 4, "name": "Mobile"},
+                    "value": phone,
+                    "defaultFlag": True,  # Ensure defaultFlag is set to True for mobile
+                    "communicationType": "Phone"
+                }
+            ]
+        }
+
+    # Send API request to add the contact
+    response = requests.post(f"{BASE_URL}/company/contacts", json=contact_data, headers=HEADERS)
+    
+    if response.status_code == 201:
+        # Redirect to the /phone route with the newly created contact details
+        return redirect(f"/phone?phone={phone}")
+    else:
+        # Handle errors (for simplicity, just returning the error message here)
+        return response.text
+
+
+@app.route('/create-company-and-contact', methods=['POST'])
+def create_company_and_contact():
+    """Create a new company and add a contact to it."""
+    # Extract form data for company
+    company_name = request.form.get('companyName')
+    address = request.form.get('address')
+    company_phone = request.form.get('companyPhone')
+    territory = request.form.get('territory')
+    city = request.form.get('city')
+    state = request.form.get('state')
+    zip_code = request.form.get('zip')
+
+    # Extract form data for contact
+    first_name = request.form.get('firstName')
+    last_name = request.form.get('lastName')
+    email = request.form.get('email')
+    phone = request.form.get('phone')
+    
+    # Generate Company Identifier to Satisfy API POST requirements
+    company_identifier = generate_company_identifier(company_name)
+
+    # Prepare data for API request to create company
+    company_data = {
+        "identifier": company_identifier,
+        "name": company_name,
+        "addressLine1": address,
+        "addressLine2": f"{city}, {state} {zip_code}",
+        "phoneNumber": company_phone,
+        "territory": {"name": territory},
+        "site": {"name": "Main Office"}
+    }
+
+    # Send API request to create the company
+    company_response = requests.post(f"{BASE_URL}/company/companies", json=company_data, headers=HEADERS)
+    
+    if company_response.status_code == 201:
+        created_company = company_response.json()
+        # Prepare data for API request to add contact to the newly created company
+        contact_data = {
+            "firstName": first_name,
+            "lastName": last_name,
+            "defaultPhoneType": "Mobile",
+            "defaultPhoneNbr": phone,
+            "company": {"id": created_company['id']},
+            "communicationItems": [
+                {
+                    "type": {"id": 1, "name": "Email"},
+                    "value": email,
+                    "defaultFlag": False,  # Ensure defaultFlag is set to False for email
+                    "communicationType": "Email"
+                },
+                {
+                    "type": {"id": 4, "name": "Mobile"},
+                    "value": phone,
+                    "defaultFlag": True,  # Ensure defaultFlag is set to True for mobile
+                    "communicationType": "Phone"
+                }
+            ]
+        }
+
+        # Send API request to add the contact
+        contact_response = requests.post(f"{BASE_URL}/company/contacts", json=contact_data, headers=HEADERS)
+        # After creating the contact:
+        if contact_response.status_code == 201:
+            created_contact = contact_response.json()
+            contact_id = created_contact['id']
+
+        # Update the company with the new primary contact
+        company_update_data = {
+            "identifier": created_company['identifier'],
+            "name": created_company['name'],
+            "status": {"name": "Not-Approved"},
+            "defaultContact": {"id": contact_id},
+            "billToCompany": {"id": created_company['id']},
+            "addressLine1": created_company['addressLine1'],
+            "addressLine2": created_company['addressLine2'],
+            "phoneNumber": created_company['phoneNumber']
+        }
+
+        company_update_response = requests.put(f"{BASE_URL}/company/companies/{created_company['id']}", json=company_update_data, headers=HEADERS)
+
+        if company_update_response.status_code != 200:
+            # Handle errors (for simplicity, just returning the error message here)
+            return f"Failed to update the company's primary contact. Error: {company_update_response.text}", 400
+
+        else:
+            # Continue to phone route with new contact information
+            return redirect(f"/phone?phone={phone}")
+    else:
+        # Handle errors (for simplicity, just returning the error message here)
+        return company_response.text
+        
+@app.route('/contact-details/<int:contact_id>')
+def get_contact_details(contact_id):
+    """Retrieve full details about a contact by their ID."""
+    
+    # Send API request to fetch the contact details
+    response = requests.get(f"{BASE_URL}/company/contacts/{contact_id}", headers=HEADERS)
+    
+    if response.status_code == 200:
+        return jsonify(response.json())
+    else:
+        return f"Failed to retrieve contact details. Error: {response.text}", 400
+
+
 if __name__ == '__main__':
-    app.run(debug=True, port=6969)
+    app.run(host='0.0.0.0', debug=True, port=6699)
