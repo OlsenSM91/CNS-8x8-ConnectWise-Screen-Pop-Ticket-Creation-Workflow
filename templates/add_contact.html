@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link rel="shortcut icon" href="https://cns4u.com/logo/labtech.ico"/>
-    <title>Add Contact</title>
+    <title>CNSRx Screen Pop - Add Contact</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -21,6 +21,7 @@
             padding: 20px;
             border-radius: 5px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+			margin-bottom: 50px;
         }
 
         h1, h2 {
@@ -57,7 +58,7 @@
             display: block;
             margin: 0 auto 20px auto;
             max-width: 200px;
-        }
+		}
     </style>
 </head>
 
@@ -170,6 +171,9 @@
             }
         });
     </script>
+	<div class="footer">
+		<center>Made with ❤️ by Steven Olsen</center>
+		<center><p>Call came in at: {{ timestamp }}</p></center>
+	</div>
 </body>
-
 </html>
