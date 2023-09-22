@@ -134,7 +134,8 @@ def phone():
         
 @app.route('/add-contact')
 def add_contact():
-    return render_template('add_contact.html')
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    return render_template('add_contact.html', timestamp=timestamp)
 
 @app.route('/create-ticket', methods=['POST'])
 def create_ticket():
