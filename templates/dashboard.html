@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" href="https://cns4u.com/logo/labtech.ico"/>
-    <title>CNSRx Open Ticket Dashboard</title>
+    <title>CNS Open Ticket Dashboard</title>
     <meta http-equiv="refresh" content="300"> <!-- Page refresh every 5 minutes -->
     <style>
+        /* Page and Modal Styling */
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
@@ -21,7 +22,6 @@
             padding: 20px;
             border-radius: 5px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            margin-bottom: 50px; 
         }
 
         h1, h2 {
@@ -45,18 +45,12 @@
             background-color: #f2f2f2;
             text-align: left;
             padding: 8px;
+            cursor: pointer;
         }
 
         td {
             padding: 8px;
-        }
-
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-
-        tr:nth-child(odd) {
-            background-color: #ffffff;
+            cursor: pointer;
         }
 
         .pagination {
@@ -73,34 +67,251 @@
         .pagination a.active {
             font-weight: bold;
         }
+
+        .search-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .search-container input[type="text"] {
+            width: 300px;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        #loading-message {
+            text-align: center;
+            font-size: 1.2em;
+            color: #3AA1D8;
+        }
+
+        /* Button Styling */
+        button {
+            background-color: #ff0000;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 15px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #cc0000;
+        }
+
+        /* Dropdown Styling */
+        select {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
     </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.3/js/jquery.tablesorter.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Cache the boards
+            let boards = {};
+
+            // Fetch boards on page load and store them in boards object
+            $.get("/service/boards", function(data) {
+                data.forEach(board => boards[board.id] = board.name);
+            }).fail(function() {
+                console.error('Failed to load service boards.');
+            });
+
+            // Enable table sorting
+            $("table").tablesorter();
+
+            // Implement search functionality
+            $("#search-box").on("input", function() {
+                var value = $(this).val().toLowerCase();
+                $("tbody tr").filter(function() {
+                    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+                });
+            });
+
+            // Show modal with ticket details when a row is clicked
+            $("tbody").on("click", "tr", function() {
+                var ticketId = $(this).find("td:eq(1)").text();
+                var boardId = $(this).data("board-id"); // Set this in the table row to get the board ID
+
+                if (ticketId !== 'N/A') {
+                    $("#modal-content").html('<p id="loading-message">Loading...</p>'); // Show loading message
+                    $("#myModal").show();
+
+                    // Fetch ticket notes
+                    $.get(`/project/tickets/${ticketId}/notes`, function(data) {
+                        var notesHtml = '';
+                        if (Array.isArray(data) && data.length > 0) {
+                            notesHtml = data.map(note => 
+                                `<p><strong>${note.member?.name || 'Unknown Member'}:</strong> ${note.text || 'No text available'}</p>`
+                            ).join('');
+                        } else {
+                            notesHtml = '<p>No notes available for this ticket.</p>';
+                        }
+
+                        // Fetch available statuses
+                        $.get(`/project/boards/${boardId}/statuses`, function(statusData) {
+                            var statusOptions = statusData.map(status => `<option value="${status.id}">${status.name}</option>`).join('');
+
+                            // Update modal content
+                            $("#modal-content").html(
+                                `<span class="close">&times;</span>
+                                <h2>Ticket #${ticketId} Details</h2>
+                                <div>
+                                    <h3>Notes:</h3>
+                                    ${notesHtml}
+                                    <h3>Add Note:</h3>
+                                    <textarea id="new-note-text" rows="4" style="width: 100%;"></textarea><br>
+                                    <label for="note-type">Note Type:</label>
+                                    <select id="note-type">
+                                        <option value="Discussion">Discussion</option>
+                                        <option value="Internal">Internal</option>
+                                        <option value="Resolution">Resolution</option>
+                                    </select><br><br>
+                                    <button id="add-note-button" data-ticket-id="${ticketId}">Add Note</button>
+
+                                    <h3>Change Status:</h3>
+                                    <select id="status-dropdown">
+                                        ${statusOptions}
+                                    </select><br><br>
+                                    <button id="change-status-button" data-ticket-id="${ticketId}" data-board-id="${boardId}">Update Status</button>
+                                </div>`
+                            );
+                        }).fail(function() {
+                            $("#modal-content").append('<p>Failed to load statuses. Please try again.</p>');
+                        });
+                    }).fail(function() {
+                        $("#modal-content").html('<p>Failed to load ticket details. Please try again.</p>');
+                    });
+                }
+            });
+
+            // Close modal
+            $(document).on("click", ".close", function() {
+                $("#myModal").hide();
+            });
+
+            // Add a note to the ticket
+            $(document).on("click", "#add-note-button", function() {
+                var ticketId = $(this).data("ticket-id");
+                var noteText = $("#new-note-text").val();
+                var noteType = $("#note-type").val();
+
+                var detailDescriptionFlag = (noteType === "Discussion");
+                var internalAnalysisFlag = (noteType === "Internal");
+                var resolutionFlag = (noteType === "Resolution");
+
+                $.ajax({
+                    url: `/project/tickets/${ticketId}/notes`,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        text: noteText,
+                        detailDescriptionFlag: detailDescriptionFlag,
+                        internalAnalysisFlag: internalAnalysisFlag,
+                        resolutionFlag: resolutionFlag
+                    }),
+                    success: function() {
+                        alert('Note added successfully');
+                        $("#myModal").hide();
+                    },
+                    error: function() {
+                        alert('Failed to add note');
+                    }
+                });
+            });
+
+            // Update ticket status
+            $(document).on("click", "#change-status-button", function() {
+                var ticketId = $(this).data("ticket-id");
+                var newStatusId = $("#status-dropdown").val();
+
+                $.ajax({
+                    url: `/project/tickets/${ticketId}/status`,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ status: newStatusId }),
+                    success: function() {
+                        alert('Status updated successfully');
+                        $("#myModal").hide();
+                    },
+                    error: function() {
+                        alert('Failed to update status');
+                    }
+                });
+            });
+        });
+    </script>
 </head>
 <body>
-    <br />
-    <!-- Company Logo -->
     <center><img src="https://www.cns4u.com/logo/logo-medium.png" alt="Logo" class="logo"></center>
-    
-    <center><h1>CNSRx Open Tickets</h1></center>
-    
+    <center><h1>Open Tickets Dashboard</h1></center>
+
     <div class="container">
+        <div class="search-container">
+            <input type="text" id="search-box" placeholder="Search tickets...">
+        </div>
+
         <table>
-            <!-- Table Headers -->
             <thead>
                 <tr>
                     <th>Days Open</th>
-					<th>Ticket#</th>
+                    <th>Ticket#</th>
                     <th>Summary</th>
                     <th>Company</th>
                     <th>Technician</th>
                     <th>Status</th>
                 </tr>
             </thead>
-            <!-- Table Body -->
             <tbody>
                 {% for ticket in tickets %}
-                <tr>
+                <tr data-board-id="{{ ticket.get('board', {}).get('id', 'N/A') }}">
                     <td>{{ ticket['age'] }}</td>
-					<td>{{ ticket.get('id', 'N/A') }}</td>
+                    <td>{{ ticket.get('id', 'N/A') }}</td>
                     <td>{{ ticket.get('summary', 'N/A') }}</td>
                     <td>{{ ticket.get('company', {}).get('name', 'N/A') }}</td>
                     <td>{{ ticket['resources'] if 'resources' in ticket else 'N/A' }}</td>
@@ -111,10 +322,12 @@
         </table>
     </div>
 
-    <!-- Timestamp -->
+    <div id="myModal" class="modal">
+        <div class="modal-content" id="modal-content"></div>
+    </div>
+
     <center><p class="timestamp">Last Updated: {{ timestamp }}</p></center>
 
-    <!-- Pagination -->
     <div class="pagination">
         {% for i in range(1, total_pages + 1) %}
         <a href="{{ url_for('index', page=i) }}" class="{{ 'active' if i == current_page else '' }}">{{ i }}</a>
